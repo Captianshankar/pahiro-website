@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en" id="htmlRoot">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pahiro — Landslide Early Warning, Gangtok</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23efe9d8'/%3E%3Cpath d='M2 26 L13 8 L18 16 L22 10 L30 26 Z' fill='none' stroke='%231b2a4a' stroke-width='2'/%3E%3Cpath d='M13 8 L11 14 L15 15 L12 20' fill='none' stroke='%237a1f1f' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<!-- Link to external CSS -->
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="gate">
+  <div class="box">
+    <div class="box-head">Select your location</div>
+    <div class="box-body">
+      <p style="margin-top:0;">Pahiro shows live slope-risk conditions for one town at a time. Choose a location to continue.</p>
+      <ul id="gateList">
+        <li class="enabled" data-town="Gangtok" tabindex="0" role="button">Gangtok, Sikkim <span class="tag">available</span></li>
+        <li class="disabled">Shillong, Meghalaya <span class="tag">not yet available</span></li>
+        <li class="disabled">Itanagar, Arunachal Pradesh <span class="tag">not yet available</span></li>
+        <li class="disabled">Kohima, Nagaland <span class="tag">not yet available</span></li>
+        <li class="disabled">Imphal, Manipur <span class="tag">not yet available</span></li>
+        <li class="disabled">Aizawl, Mizoram <span class="tag">not yet available</span></li>
+        <li class="disabled">Agartala, Tripura <span class="tag">not yet available</span></li>
+        <li class="disabled">Guwahati, Assam <span class="tag">not yet available</span></li>
+      </ul>
+      <p class="note">Only Gangtok is covered in this demonstration. Other towns across the North Eastern Region are planned for later phases.</p>
+      <div class="gate-actions">
+        <button class="btn" id="useLocationBtn">Use my current location</button>
+        <button class="btn primary" id="continueGangtok">Open Gangtok</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header class="site-header">
+  <div class="brand">
+    <svg width="40" height="40" viewBox="0 0 32 32" aria-hidden="true">
+      <rect width="32" height="32" fill="#efe9d8" stroke="#efe9d8"/>
+      <path d="M2 26 L13 8 L18 16 L22 10 L30 26 Z" fill="none" stroke="#efe9d8" stroke-width="2"/>
+      <path d="M13 8 L11 14 L15 15 L12 20" fill="none" stroke="#c98a63" stroke-width="1.5"/>
+    </svg>
+    <div>
+      <h1>Pahiro</h1>
+      <div class="tagline" data-i18n="site_tagline">Early warning and monitoring for landslide-prone slopes</div>
+    </div>
+  </div>
+  <div class="location-pill">
+    Location: <strong id="currentTownLabel">Gangtok, Sikkim</strong>
+    <button id="changeLocationBtn">change</button>
+  </div>
+</header>
+
+<div class="legend-strip" aria-hidden="true">
+  <span style="background:var(--low);"></span>
+  <span style="background:var(--moderate);"></span>
+  <span style="background:var(--high);"></span>
+  <span style="background:var(--very-high);"></span>
+</div>
+
+<nav class="site-nav">
+  <a href="#home" data-i18n="nav_home">Home</a><span class="sep">|</span>
+  <a href="#dashboard" data-i18n="nav_map">Risk dashboard</a><span class="sep">|</span>
+  <a href="#report" data-i18n="nav_report">Field reports</a><span class="sep">|</span>
+  <a href="#alerts-panel" data-i18n="nav_alerts">Alerts</a><span class="sep">|</span>
+  <a href="#about" data-i18n="nav_about">About</a>
+  <span style="float:right;" class="lang-toggle">
+    <button data-lang="en" class="active">English</button>
+    <button data-lang="ne">नेपाली</button>
+    <button data-lang="hi">हिंदी</button>
+  </span>
+</nav>
+
+<main>
+
+  <div class="banner" id="statusBanner">
+    <span class="pulse" id="pulseDot"></span>
+    <strong data-i18n="alert_heading">Current status</strong>:
+    <span id="bannerText">Reading live rainfall and soil moisture data for Gangtok…</span>
+  </div>
+
+  <h2 id="home" data-i18n="map_heading">Gangtok — population and landslide risk zones</h2>
+  <p style="margin-top:0;">The map below marks the town's more densely populated wards alongside slopes with a documented history of instability. Labels with a leader line point to the highest-risk stretches.</p>
+
+  <div class="panel">
+    <!-- Map container -->
+    <div id="map"></div>
+    <div class="legend-row">
+      <div class="legend-item"><span class="swatch" style="background:#1b2a4a;"></span> Populated ward</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--very-high);"></span> Very high risk slope</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--high);"></span> High risk slope</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--moderate);"></span> Moderate risk slope</div>
+      <div class="legend-item"><span class="swatch" style="background:#555;"></span> Monitored road corridor</div>
+    </div>
+    <div class="panel-foot">
+      <span>Base map: OpenStreetMap contributors. Zone boundaries are approximate and illustrative for this demonstration.</span>
+    </div>
+  </div>
+
+  <div class="layout" id="dashboard">
+    <div class="col-main">
+
+      <div class="panel">
+        <div class="panel-head" data-i18n="forecast_heading">Three-day rainfall outlook</div>
+        <div class="panel-body">
+          <table id="forecastTable">
+            <caption>Source: Open-Meteo weather forecast API, updated automatically.</caption>
+            <thead>
+              <tr><th>Date</th><th>Rain expected</th><th>Chance of rain</th><th>Indicative level</th></tr>
+            </thead>
+            <tbody id="forecastBody">
+              <tr><td colspan="4">Loading forecast…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head" data-i18n="roads_heading">Road connectivity</div>
+        <div class="panel-body">
+          <table>
+            <thead><tr><th>Route</th><th>Status</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr><td>NH10, Ranipool – Gangtok</td><td><span class="badge Moderate">Reduced</span></td><td>Single-lane working near Ranipool after minor slippage; demo data.</td></tr>
+              <tr><td>Gangtok – Rumtek road</td><td><span class="badge Low">Open</span></td><td>Normal traffic; demo data.</td></tr>
+              <tr><td>Gangtok – Ranka road</td><td><span class="badge Low">Open</span></td><td>Normal traffic; demo data.</td></tr>
+              <tr><td>Tadong institutional access road</td><td><span class="badge Moderate">Watch</span></td><td>Cut-slope under observation; demo data.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-foot"><span>Illustrative status for this demonstration — not a live traffic feed.</span></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head" data-i18n="priority_heading">Response priority order</div>
+        <div class="panel-body">
+          <p>Ranked by combining slope-risk level with population exposure. Demonstration logic only.</p>
+          <ol class="priority-list">
+            <li><strong>Burtuk (Ward 1)</strong> — very high slope risk with dense settlement on the upper slope; recommend slope inspection and evacuation readiness.</li>
+            <li><strong>Syari–Tathangchen (Ward 15)</strong> — long-running slow-moving slide below the old Palace grounds; recommend continued displacement monitoring.</li>
+            <li><strong>Upper Sichey (Ward 2)</strong> — fractured hillside with repeated creep; recommend drainage checks before peak monsoon.</li>
+            <li><strong>Ranipool (Ward 14)</strong> — loose fill slopes along the highway corridor; recommend traffic advisory during heavy rain.</li>
+            <li><strong>Chandmari slide belt</strong> — long-settled residential ward with a decades-long history of movement; recommend structural inspection of affected buildings.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="col-side">
+
+      <div class="panel">
+        <div class="panel-head" data-i18n="conditions_heading">Present conditions — Gangtok</div>
+        <div class="panel-body">
+          <div class="stat-row"><span class="stat-label">Rain, last hour</span><span class="stat-value" id="statRainNow">—</span></div>
+          <div class="stat-row"><span class="stat-label">Rain expected, next 24 h</span><span class="stat-value" id="statRain24">—</span></div>
+          <div class="stat-row"><span class="stat-label">Soil moisture, 0–1 cm</span><span class="stat-value" id="statSoil01">—</span></div>
+          <div class="stat-row"><span class="stat-label">Soil moisture, 1–3 cm</span><span class="stat-value" id="statSoil13">—</span></div>
+          <div class="stat-row"><span class="stat-label">Air temperature</span><span class="stat-value" id="statTemp">—</span></div>
+          <div class="stat-row"><span class="stat-label">Indicative risk score</span><span class="stat-value" id="statRiskBadge">—</span></div>
+        </div>
+        <div class="panel-foot">
+          <span id="lastUpdated">Last updated: —</span>
+          <button class="btn" id="refreshBtn" style="padding:2px 8px;">Refresh now</button>
+        </div>
+      </div>
+
+      <div class="panel" id="alerts-panel">
+        <div class="panel-head" data-i18n="nav_alerts">Alerts</div>
+        <div class="panel-body" id="alertsBody">
+          <p>No active alerts issued for Gangtok at this time. This panel updates as the risk score changes.</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Network status</div>
+        <div class="panel-body">
+          <div class="stat-row"><span class="stat-label">Connection</span><span class="stat-value" id="netStatus">checking…</span></div>
+          <p style="margin-top:8px; font-size:11.5px; color:#544c39;">Field reports submitted while offline are stored securely on this device and are retrieved automatically when returning.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <h2 id="report" data-i18n="report_heading">Report a slope or road hazard</h2>
+  <div class="panel">
+    <div class="panel-body">
+      <p>Field officials and residents can log cracks, slope movement or a blocked road. A photo or short video helps the district team assess the site faster.</p>
+      <form id="reportForm">
+        <label for="repLocality">Locality</label>
+        <select id="repLocality">
+          <option>Burtuk</option>
+          <option>Upper Sichey</option>
+          <option>Lower Sichey</option>
+          <option>Chandmari</option>
+          <option>Development Area</option>
+          <option>Lower MG Marg</option>
+          <option>Deorali</option>
+          <option>Tadong</option>
+          <option>Ranipool</option>
+          <option>Syari–Tathangchen</option>
+          <option>Other / roadside</option>
+        </select>
+
+        <label for="repDesc">What did you notice?</label>
+        <textarea id="repDesc" rows="3" placeholder="e.g. fresh crack along the retaining wall, road edge subsiding, water seeping from the slope…"></textarea>
+
+        <label for="repFile">Photo or video (optional)</label>
+        <input type="file" id="repFile" accept="image/*,video/*">
+
+        <label style="display:flex; align-items:center; gap:6px; margin-top:10px;">
+          <input type="checkbox" id="repGeo" style="width:auto;"> Attach my current location
+        </label>
+
+        <div style="margin-top:12px;">
+          <button type="submit" class="btn primary">Submit report</button>
+        </div>
+      </form>
+      <div id="reportList"></div>
+    </div>
+    <div class="panel-foot"><span id="storageNote">Local demonstration: Field reports are saved directly to your browser's local storage to demonstrate the offline sync capabilities.</span></div>
+  </div>
+
+  <h2 id="about" data-i18n="about_heading">About this platform</h2>
+  <div class="panel">
+    <div class="panel-body">
+      <p>Pahiro (a regional word for landslide) is a concept demonstration of a real-time monitoring and early-warning platform for landslide-prone towns in the North Eastern Region. It combines a GIS view of population and risk, live rainfall and soil-moisture readings, a citizen and field-official reporting channel, and dashboards intended for district administrations and disaster management authorities.</p>
+      <p>Gangtok's hill slopes have a long record of instability, worsened by steep terrain, heavy monsoon rainfall and unplanned hill-cutting. A severe rainfall-triggered event in June 1997 caused widespread damage and loss of life across several wards, and smaller slides recur most monsoons, particularly around Chandmari, Sichey, Burtuk and Syari–Tathangchen.</p>
+      <p><strong>What is real in this demonstration:</strong> the rainfall, forecast and soil-moisture readings are live figures for Gangtok's coordinates, drawn from a public weather data service. <strong>What is illustrative:</strong> ward boundaries, exact marker positions, road status, priority ordering and the risk-score thresholds are simplified for demonstration and are not a substitute for an official hazard assessment.</p>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <div class="disclaimer">
+    This is an independent concept prototype built to illustrate the idea above. It is not an official government service and should not be used to make evacuation or emergency decisions. In an emergency in Sikkim, contact the State/District Disaster Management Authority or dial 112.
+  </div>
+  <p>Data sources: rainfall, forecast and soil moisture from the Open-Meteo public weather API; base map tiles from OpenStreetMap contributors; slope-risk and ward context adapted from published hazard studies of Gangtok. Built as a demonstration for the North Eastern Region landslide early-warning problem statement.</p>
+</footer>
+
+<!-- External Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
